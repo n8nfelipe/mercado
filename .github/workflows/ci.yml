@@ -55,6 +55,8 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+      - name: Build workspace packages
+        run: pnpm --filter @mercado/api-client --filter @mercado/ui build
       - name: Lint
         run: pnpm -r --if-present lint
       - name: Typecheck

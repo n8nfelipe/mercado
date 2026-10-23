@@ -39,5 +39,5 @@ trap cleanup EXIT
 
 log "checking breaking changes against ${BASE_FILE}"
 cd "${ROOT_DIR}/backend"
-GOTOOLCHAIN=local go run github.com/tufin/oasdiff@v1.10.0 breaking \
+GOTOOLCHAIN=auto go run github.com/oasdiff/oasdiff@v1.34.1 breaking \
   "${BASE_FILE}" "${REVISION_FILE}" --fail-on ERR

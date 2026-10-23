@@ -1,0 +1,48 @@
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "background": "#ffffff",
+    "fontFamily": "Inter, ui-sans-serif, system-ui, sans-serif",
+    "fontSize": "15px",
+    "primaryColor": "#ffffff",
+    "primaryTextColor": "#0f172a",
+    "primaryBorderColor": "#94a3b8",
+    "lineColor": "#64748b",
+    "secondaryColor": "#f1f5f9",
+    "tertiaryColor": "#ffffff",
+    "clusterBkg": "#f8fafc",
+    "clusterBorder": "#cbd5e1",
+    "edgeLabelBackground": "#ffffff"
+  },
+  "flowchart": {"curve": "basis", "nodeSpacing": 44, "rankSpacing": 70, "padding": 16},
+  "sequence": {"mirrorActors": false, "showSequenceNumbers": true}
+}}%%
+flowchart LR
+  classDef browser fill:#0f172a,stroke:#0f172a,color:#ffffff,font-weight:600
+  classDef next fill:#eff6ff,stroke:#2563eb,color:#1e3a8a
+  classDef pkg fill:#f5f3ff,stroke:#8b5cf6,color:#4c1d95
+  classDef api fill:#ecfeff,stroke:#0891b2,color:#164e63
+
+  B([Navegador]):::browser
+  subgraph NEXT["Next.js 16 · frontend/apps/web"]
+    direction TB
+    RSC["Server Components<br/>fetch API_BASE_URL<br/>cache: no-store"]:::next
+    MW["middleware.ts<br/>/api/* → API_BASE_URL"]:::next
+    UI["Client Components<br/>formulários + browserApi('/api')"]:::next
+  end
+  API["API Go<br/>/v1"]:::api
+
+  B -->|"navegação / SSR"| RSC
+  B -->|"fetch /api/*"| MW
+  RSC -->|"API_BASE_URL"| API
+  MW -->|"rewrite + cookie"| API
+  UI --> MW
+
+  subgraph PACOTES["Pacotes compartilhados"]
+    direction TB
+    UIKIT["@mercado/ui<br/>SiteHeader · ListingCard<br/>CatalogFilters · Pagination"]:::pkg
+    CLIENT["@mercado/api-client<br/>schema gerado do OpenAPI"]:::pkg
+  end
+  UI -.-> CLIENT
+  RSC -.-> UIKIT
+  UI -.-> UIKIT

@@ -1,0 +1,18 @@
+FROM node:24-alpine
+
+RUN corepack enable
+
+ENV HOME=/tmp \
+    COREPACK_HOME=/tmp/corepack
+
+WORKDIR /app
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY frontend/apps/web/package.json frontend/apps/web/package.json
+COPY frontend/packages/ui/package.json frontend/packages/ui/package.json
+COPY frontend/packages/api-client/package.json frontend/packages/api-client/package.json
+RUN pnpm install --frozen-lockfile
+
+COPY . .
+RUN chown -R 100:101 /app
+
+CMD ["pnpm", "--filter", "@mercado/web", "exec", "next", "dev", "-H", "0.0.0.0", "-p", "3000"]

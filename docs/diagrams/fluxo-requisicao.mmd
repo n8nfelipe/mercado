@@ -1,0 +1,50 @@
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "background": "#ffffff",
+    "fontFamily": "Inter, ui-sans-serif, system-ui, sans-serif",
+    "fontSize": "15px",
+    "primaryColor": "#ffffff",
+    "primaryTextColor": "#0f172a",
+    "primaryBorderColor": "#94a3b8",
+    "lineColor": "#64748b",
+    "secondaryColor": "#f1f5f9",
+    "tertiaryColor": "#ffffff",
+    "clusterBkg": "#f8fafc",
+    "clusterBorder": "#cbd5e1",
+    "edgeLabelBackground": "#ffffff"
+  },
+  "flowchart": {"curve": "basis", "nodeSpacing": 44, "rankSpacing": 70, "padding": 16},
+  "sequence": {"mirrorActors": false, "showSequenceNumbers": true}
+}}%%
+flowchart LR
+  classDef base fill:#eff6ff,stroke:#2563eb,color:#1e3a8a
+  classDef store fill:#f0fdf4,stroke:#16a34a,color:#14532d
+  classDef warn fill:#fff7ed,stroke:#ea580c,color:#7c2d12
+  classDef ops fill:#f8fafc,stroke:#94a3b8,color:#334155,stroke-dasharray:4 3
+
+  C([Cliente HTTP]):::base --> C1["correlation<br/>X-Correlation-ID"]:::base
+  C1 --> C2["access log JSON<br/>slog"]:::base
+  C2 --> C3["recovery<br/>panic → 500"]:::base
+  C3 --> C4["métricas<br/>Prometheus"]:::base
+  C4 --> C5["rate limit<br/>Redis · fail-open"]:::warn
+  C5 --> C6["body limit<br/>1 MiB"]:::base
+  C6 --> C7["CSRF<br/>Origin / Sec-Fetch-Site"]:::base
+  C7 --> R{"roteamento chi"}
+
+  R --> OPS["Operação<br/>/healthz · /readyz<br/>/metrics · /v1/status"]:::ops
+  R --> PUB["Catálogo público"]:::base
+  R --> AUTH["Identidade<br/>registro · login · me"]:::base
+  R --> SELL["Vendedor<br/>sessão + role seller"]:::base
+  R --> ADM["Admin<br/>sessão + role admin"]:::base
+
+  AUTH --> ST["store · pgx"]:::store
+  SELL --> ST
+  ADM --> ST
+  PUB --> ST
+  ST --> PG[("PostgreSQL")]:::store
+  C5 --> RD[("Redis")]:::warn
+  SELL --> MIO[("MinIO")]:::store
+  R --> OBS["logs + métricas + traces"]:::ops
+  API["otlphttp"]:::ops
+  R -.-> API

@@ -1,0 +1,40 @@
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "background": "#ffffff",
+    "fontFamily": "Inter, ui-sans-serif, system-ui, sans-serif",
+    "fontSize": "15px",
+    "primaryColor": "#ffffff",
+    "primaryTextColor": "#0f172a",
+    "primaryBorderColor": "#94a3b8",
+    "lineColor": "#64748b",
+    "secondaryColor": "#f1f5f9",
+    "tertiaryColor": "#ffffff",
+    "clusterBkg": "#f8fafc",
+    "clusterBorder": "#cbd5e1",
+    "edgeLabelBackground": "#ffffff"
+  },
+  "flowchart": {"curve": "basis", "nodeSpacing": 44, "rankSpacing": 70, "padding": 16},
+  "sequence": {"mirrorActors": false, "showSequenceNumbers": true}
+}}%%
+sequenceDiagram
+    autonumber
+    actor S as Vendedor
+    participant W as web
+    participant A as API
+    participant P as PostgreSQL
+    participant M as MinIO
+    S->>W: POST /api/v1/seller/listings/{id}/images
+    W->>A: proxy + cookie + multipart
+    A->>P: valida dono, estado e limite de 8 imagens
+    A->>A: detecta JPEG, PNG ou WebP (≤ 5 MiB)
+    A->>M: PUT listings/{listing}/{image}.{ext}
+    A->>P: INSERT listing_images
+    A-->>W: 201 {id, url, position}
+    W-->>S: 201
+    S->>W: GET /api/v1/media/{listing}/{file}
+    W->>A: proxy
+    A->>P: consulta content-type pelo object key
+    A->>M: GET objeto
+    A-->>W: stream + Cache-Control 1 dia + nosniff
+    W-->>S: 200 imagem

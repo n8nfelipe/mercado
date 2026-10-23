@@ -1,0 +1,48 @@
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "background": "#ffffff",
+    "fontFamily": "Inter, ui-sans-serif, system-ui, sans-serif",
+    "fontSize": "15px",
+    "primaryColor": "#ffffff",
+    "primaryTextColor": "#0f172a",
+    "primaryBorderColor": "#94a3b8",
+    "lineColor": "#64748b",
+    "secondaryColor": "#f1f5f9",
+    "tertiaryColor": "#ffffff",
+    "clusterBkg": "#f8fafc",
+    "clusterBorder": "#cbd5e1",
+    "edgeLabelBackground": "#ffffff"
+  },
+  "flowchart": {"curve": "basis", "nodeSpacing": 44, "rankSpacing": 70, "padding": 16},
+  "sequence": {"mirrorActors": false, "showSequenceNumbers": true}
+}}%%
+sequenceDiagram
+    autonumber
+    actor B as Navegador
+    participant W as web (Next.js)
+    participant A as API (Go)
+    participant R as Redis
+    participant P as PostgreSQL
+    B->>W: POST /api/v1/auth/login
+    W->>A: proxy /v1/auth/login + Origin
+    A->>R: limite por hash(conta)+IP
+    alt acima do limite
+        A-->>W: 429 + Retry-After
+    else permitido
+        A->>P: usuário por email normalizado
+        A->>A: argon2id verify
+        A->>P: INSERT session (token SHA-256)
+        A-->>W: Set-Cookie mercado_session
+        W-->>B: 200 + cookie same-origin
+    end
+    B->>W: GET /api/v1/auth/me
+    W->>A: proxy + cookie
+    A->>P: valida sessão e papéis
+    A-->>W: usuário + roles
+    W-->>B: 200
+    B->>W: POST /api/v1/auth/logout
+    W->>A: proxy + cookie
+    A->>P: revoga sessão
+    A-->>W: 204 + cookie expirado
+    W-->>B: sessão encerrada

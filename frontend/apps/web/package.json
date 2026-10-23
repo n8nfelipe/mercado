@@ -1,0 +1,26 @@
+{
+  "name": "@mercado/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -H 127.0.0.1 -p 3000",
+    "build": "next build",
+    "start": "node e2e/prepare-standalone.mjs && node .next/standalone/frontend/apps/web/server.js",
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "pnpm build && playwright test"
+  },
+  "dependencies": {
+    "@mercado/api-client": "workspace:*",
+    "@mercado/ui": "workspace:*",
+    "next": "16.2.9",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@types/node": "24.10.0",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "typescript": "5.7.3"
+  }
+}

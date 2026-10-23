@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CLUSTER_NAME="${CLUSTER_NAME:-mercado-dev}"
+
+if kind get clusters 2>/dev/null | grep -qx "${CLUSTER_NAME}"; then
+  echo "deleting kind cluster ${CLUSTER_NAME}"
+  kind delete cluster --name "${CLUSTER_NAME}"
+else
+  echo "kind cluster ${CLUSTER_NAME} does not exist"
+fi

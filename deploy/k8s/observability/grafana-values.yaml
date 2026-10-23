@@ -1,0 +1,40 @@
+admin:
+  existingSecret: grafana-admin
+  userKey: admin-user
+  passwordKey: admin-password
+
+persistence:
+  enabled: false
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+dashboardProviders:
+  dashboardproviders.yaml:
+    apiVersion: 1
+    providers:
+      - name: mercado
+        orgId: 1
+        folder: Mercado
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/mercado
+
+dashboardsConfigMaps:
+  mercado: grafana-dashboards
+
+extraConfigmapMounts:
+  - name: grafana-datasources
+    configMap: grafana-datasources
+    mountPath: /etc/grafana/provisioning/datasources
+    readOnly: true
+
+ingress:
+  enabled: false

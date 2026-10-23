@@ -1,0 +1,32 @@
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "background": "#ffffff",
+    "fontFamily": "Inter, ui-sans-serif, system-ui, sans-serif",
+    "fontSize": "15px",
+    "primaryColor": "#ffffff",
+    "primaryTextColor": "#0f172a",
+    "primaryBorderColor": "#94a3b8",
+    "lineColor": "#64748b",
+    "secondaryColor": "#f1f5f9",
+    "tertiaryColor": "#ffffff",
+    "clusterBkg": "#f8fafc",
+    "clusterBorder": "#cbd5e1",
+    "edgeLabelBackground": "#ffffff"
+  },
+  "flowchart": {"curve": "basis", "nodeSpacing": 44, "rankSpacing": 70, "padding": 16},
+  "sequence": {"mirrorActors": false, "showSequenceNumbers": true}
+}}%%
+flowchart LR
+  classDef app fill:#eff6ff,stroke:#2563eb,color:#1e3a8a
+  classDef obs fill:#fff7ed,stroke:#ea580c,color:#7c2d12
+  classDef log fill:#f8fafc,stroke:#94a3b8,color:#334155
+  API["api · Go"]:::app
+  API -->|"/metrics"| PROM["Prometheus<br/>retenção 24h"]:::obs
+  API -.->|"OTLP gRPC :4317"| JAE["Jaeger all-in-one"]:::obs
+  API -->|"logs JSON no stdout"| KUBECTL["kubectl logs"]:::log
+  NE["node-exporter"]:::obs --> PROM
+  KSM["kube-state-metrics"]:::obs --> PROM
+  PROM --> GRAF["Grafana 12"]:::obs
+  JAE --> GRAF
+  GRAF --> DASH["Dashboard provisionado<br/>Mercado / RED e saturação"]:::obs

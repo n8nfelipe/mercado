@@ -1,0 +1,11 @@
+{
+  "name": "mercado",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@12.12.0",
+  "scripts": {
+    "build": "pnpm -r --if-present build",
+    "generate:api": "pnpm --filter @mercado/api-client generate",
+    "lint:api": "./scripts/api-contract-check.sh"
+  }
+}

@@ -1,0 +1,23 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgres
+  namespace: mercado-data
+spec:
+  instances: 1
+  storage:
+    size: 1Gi
+    storageClass: local-path
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "2"
+      memory: 1Gi
+  bootstrap:
+    initdb:
+      database: mercado
+      owner: mercado
+  monitoring:
+    enablePodMonitor: false

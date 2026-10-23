@@ -1,0 +1,30 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: observability
+  namespace: mercado-observability
+  labels:
+    app.kubernetes.io/part-of: mercado
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: grafana.mercado.localhost
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: grafana
+                port:
+                  number: 80
+    - host: jaeger.mercado.localhost
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: jaeger
+                port:
+                  number: 16686

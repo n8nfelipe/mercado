@@ -1,0 +1,17 @@
+.git
+.gitignore
+.opencode
+node_modules
+**/node_modules
+.next
+**/.next
+dist
+**/dist
+coverage
+**/coverage
+playwright-report
+test-results
+*.log
+.env
+.env.*
+!.env.example

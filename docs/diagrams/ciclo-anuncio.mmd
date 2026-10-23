@@ -1,0 +1,48 @@
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "background": "#ffffff",
+    "fontFamily": "Inter, ui-sans-serif, system-ui, sans-serif",
+    "fontSize": "15px",
+    "primaryColor": "#ffffff",
+    "primaryTextColor": "#0f172a",
+    "primaryBorderColor": "#94a3b8",
+    "lineColor": "#64748b",
+    "secondaryColor": "#f1f5f9",
+    "tertiaryColor": "#ffffff",
+    "clusterBkg": "#f8fafc",
+    "clusterBorder": "#cbd5e1",
+    "edgeLabelBackground": "#ffffff"
+  },
+  "flowchart": {"curve": "basis", "nodeSpacing": 44, "rankSpacing": 70, "padding": 16},
+  "sequence": {"mirrorActors": false, "showSequenceNumbers": true}
+}}%%
+stateDiagram-v2
+    [*] --> draft: seller cria
+    draft --> pending_review: seller submit
+    rejected --> pending_review: seller reenvia
+    pending_review --> published: admin publish
+    pending_review --> rejected: admin reject
+    published --> suspended: admin suspend
+    suspended --> published: admin publish
+    draft --> archived: seller archive
+    published --> archived: seller archive
+    suspended --> archived: seller archive
+    archived --> [*]
+
+    note right of draft
+      Edição completa:
+      título, descrição, categoria,
+      preço, condição, frete, imagens
+      e estoque.
+    end note
+
+    note right of published
+      Seller só altera preço e estoque.
+      Mudanças estruturais exigem reenvio.
+    end note
+
+    note right of rejected
+      Edição completa permitida.
+      Reenvio limpa rejection_reason.
+    end note

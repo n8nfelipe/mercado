@@ -1,0 +1,122 @@
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "background": "#ffffff",
+    "fontFamily": "Inter, ui-sans-serif, system-ui, sans-serif",
+    "fontSize": "15px",
+    "primaryColor": "#ffffff",
+    "primaryTextColor": "#0f172a",
+    "primaryBorderColor": "#94a3b8",
+    "lineColor": "#64748b",
+    "secondaryColor": "#f1f5f9",
+    "tertiaryColor": "#ffffff",
+    "clusterBkg": "#f8fafc",
+    "clusterBorder": "#cbd5e1",
+    "edgeLabelBackground": "#ffffff"
+  },
+  "flowchart": {"curve": "basis", "nodeSpacing": 44, "rankSpacing": 70, "padding": 16},
+  "sequence": {"mirrorActors": false, "showSequenceNumbers": true}
+}}%%
+erDiagram
+    users ||--o{ user_roles : "possui"
+    users ||--o{ sessions : "abre"
+    users ||--o| seller_profiles : "vira vendedor"
+    users ||--o{ inventory_adjustments : "autor"
+    users ||--o{ listing_moderation_events : "autor"
+
+    seller_profiles ||--o{ listings : "vende"
+    categories ||--o{ listings : "classifica"
+    categories ||--o{ categories : "parent"
+    currencies ||--o{ listings : "precifica"
+    currencies ||--o{ countries : "base"
+    countries ||--o{ locales : "contém"
+
+    listings ||--o{ listing_images : "tem até 8"
+    listings ||--|| inventory : "estoque"
+    listings ||--o{ inventory_adjustments : "movimenta"
+    listings ||--o{ listing_moderation_events : "audita"
+
+    users {
+        uuid id PK
+        text name
+        text email
+        text email_normalized
+        text password_hash
+        timestamptz created_at
+    }
+    user_roles {
+        uuid user_id PK
+        text role PK
+        timestamptz granted_at
+    }
+    sessions {
+        uuid id PK
+        bytea token_hash
+        timestamptz expires_at
+        timestamptz revoked_at
+    }
+    seller_profiles {
+        uuid id PK
+        uuid user_id FK
+        text display_name
+        text document_normalized
+    }
+    categories {
+        uuid id PK
+        text name
+        text slug
+        uuid parent_id FK
+        boolean is_active
+    }
+    currencies {
+        char code PK
+        text symbol
+        smallint decimal_places
+    }
+    countries {
+        char code PK
+        char currency_code FK
+        text default_locale
+    }
+    locales {
+        text code PK
+        char country_code FK
+        boolean is_extra
+    }
+    listings {
+        uuid id PK
+        uuid seller_id FK
+        uuid category_id FK
+        text title
+        bigint price_cents
+        char currency FK
+        text condition
+        text status
+        text search_text
+    }
+    listing_images {
+        uuid id PK
+        uuid listing_id FK
+        text object_key
+        text content_type
+        bigint byte_size
+        smallint position
+    }
+    inventory {
+        uuid listing_id PK
+        integer quantity
+    }
+    inventory_adjustments {
+        uuid id PK
+        uuid listing_id FK
+        uuid actor_id FK
+        integer delta
+        integer quantity
+    }
+    listing_moderation_events {
+        uuid id PK
+        uuid listing_id FK
+        uuid actor_id FK
+        text action
+        text reason
+    }

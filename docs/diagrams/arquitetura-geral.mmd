@@ -1,0 +1,60 @@
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "background": "#ffffff",
+    "fontFamily": "Inter, ui-sans-serif, system-ui, sans-serif",
+    "fontSize": "16px",
+    "primaryColor": "#ffffff",
+    "primaryTextColor": "#0f172a",
+    "primaryBorderColor": "#94a3b8",
+    "lineColor": "#64748b",
+    "secondaryColor": "#f1f5f9",
+    "tertiaryColor": "#ffffff",
+    "clusterBkg": "#f8fafc",
+    "clusterBorder": "#cbd5e1",
+    "edgeLabelBackground": "#ffffff"
+  },
+  "flowchart": {"curve": "basis", "nodeSpacing": 50, "rankSpacing": 95, "padding": 18}
+}}%%
+flowchart TB
+  classDef user fill:#0f172a,stroke:#0f172a,color:#ffffff,font-weight:600
+  classDef entry fill:#ecfeff,stroke:#0891b2,color:#164e63,font-weight:600
+  classDef app fill:#eff6ff,stroke:#2563eb,color:#1e3a8a,font-weight:600
+  classDef data fill:#f0fdf4,stroke:#16a34a,color:#14532d
+  classDef job fill:#f8fafc,stroke:#94a3b8,color:#334155,stroke-dasharray:4 3
+  classDef obs fill:#fff7ed,stroke:#ea580c,color:#7c2d12
+
+  U(["Comprador / Vendedor<br/>navegador"]):::user
+
+  subgraph KIND["kind · cluster mercado-dev · 1 control-plane"]
+    direction LR
+    ING["ingress-nginx<br/>:8080 / :8443<br/><br/>mercado.localhost → web<br/>api.mercado.localhost → api<br/>seller/admin → 404"]:::entry
+
+    WEB["web<br/><small>namespace mercado</small><br/>Next.js 16 · App Router<br/>:3000"]:::app
+    API["api<br/><small>namespace mercado</small><br/>Go 1.22 · chi<br/>REST · :8080"]:::app
+    WK["worker<br/><small>namespace mercado</small><br/>Go · placeholder"]:::app
+    MIG["Job migrate<br/>goose"]:::job
+
+    PG[("PostgreSQL<br/>CloudNativePG<br/>1Gi")]:::data
+    RD[("Redis<br/>AOF · 1Gi")]:::data
+    MIO[("MinIO<br/>mercado-listings<br/>5Gi")]:::data
+    MJOB["Job minio-init"]:::job
+    OBS["Prometheus + Grafana + Jaeger<br/><small>namespace mercado-observability</small>"]:::obs
+  end
+
+  U --> ING
+  ING --> WEB
+  ING --> API
+  WEB -->|"SSR + proxy /api<br/>same-origin"| API
+
+  API -->|"pgx/v5"| PG
+  API -->|"go-redis<br/>rate limit"| RD
+  API -->|"S3 · imagens"| MIO
+  API -.->|"OTLP / metrics"| OBS
+
+  WK -.->|"conexões ociosas"| PG
+  WK -.-> RD
+  MIG -->|"migrations"| PG
+  MJOB --> MIO
+
+  style KIND fill:#f8fafc,stroke:#0f172a,stroke-width:2px

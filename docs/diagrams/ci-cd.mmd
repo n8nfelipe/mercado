@@ -1,0 +1,36 @@
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "background": "#ffffff",
+    "fontFamily": "Inter, ui-sans-serif, system-ui, sans-serif",
+    "fontSize": "15px",
+    "primaryColor": "#ffffff",
+    "primaryTextColor": "#0f172a",
+    "primaryBorderColor": "#94a3b8",
+    "lineColor": "#64748b",
+    "secondaryColor": "#f1f5f9",
+    "tertiaryColor": "#ffffff",
+    "clusterBkg": "#f8fafc",
+    "clusterBorder": "#cbd5e1",
+    "edgeLabelBackground": "#ffffff"
+  },
+  "flowchart": {"curve": "basis", "nodeSpacing": 44, "rankSpacing": 70, "padding": 16},
+  "sequence": {"mirrorActors": false, "showSequenceNumbers": true}
+}}%%
+flowchart TD
+  classDef trigger fill:#0f172a,stroke:#0f172a,color:#ffffff,font-weight:600
+  classDef check fill:#eff6ff,stroke:#2563eb,color:#1e3a8a
+  classDef gate fill:#fff7ed,stroke:#ea580c,color:#7c2d12,font-weight:600
+  classDef release fill:#f5f3ff,stroke:#8b5cf6,color:#4c1d95
+  PR["Pull request"]:::trigger --> B["backend<br/>go test + go vet"]:::check
+  PR --> L["lint<br/>golangci-lint"]:::check
+  PR --> F["frontend<br/>pnpm lint/typecheck/test"]:::check
+  PR --> C["contract<br/>Redocly + oasdiff breaking"]:::check
+  B --> I["images<br/>build API + web<br/>SBOM Syft + Trivy CRITICAL"]:::gate
+  L --> I
+  F --> I
+  C --> I
+  I --> OK["checks do PR verdes"]:::check
+  M["merge/push na main"]:::trigger --> V["scripts/next-version.sh"]:::release
+  V --> TAG["tag semver anotada"]:::release
+  TAG --> DONE["release termina aqui<br/>sem build ou push"]:::release

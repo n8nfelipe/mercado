@@ -1,0 +1,16 @@
+FROM golang:1.22-bookworm
+
+ENV HOME=/tmp \
+    GOCACHE=/tmp/go-cache
+
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 go build -o /app/api ./cmd/api \
+    && CGO_ENABLED=0 go build -o /app/worker ./cmd/worker \
+    && CGO_ENABLED=0 go build -o /app/migrate ./cmd/migrate \
+    && mkdir -p /tmp/go-cache \
+    && chown -R 100:101 /app /src /tmp/go-cache
+
+CMD ["/app/api"]

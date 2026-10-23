@@ -1,0 +1,39 @@
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "background": "#ffffff",
+    "fontFamily": "Inter, ui-sans-serif, system-ui, sans-serif",
+    "fontSize": "15px",
+    "primaryColor": "#ffffff",
+    "primaryTextColor": "#0f172a",
+    "primaryBorderColor": "#94a3b8",
+    "lineColor": "#64748b",
+    "secondaryColor": "#f1f5f9",
+    "tertiaryColor": "#ffffff",
+    "clusterBkg": "#f8fafc",
+    "clusterBorder": "#cbd5e1",
+    "edgeLabelBackground": "#ffffff"
+  },
+  "flowchart": {"curve": "basis", "nodeSpacing": 44, "rankSpacing": 70, "padding": 16},
+  "sequence": {"mirrorActors": false, "showSequenceNumbers": true}
+}}%%
+flowchart TB
+  classDef api fill:#0f172a,stroke:#0f172a,color:#ffffff,font-weight:600
+  classDef group fill:#eff6ff,stroke:#2563eb,color:#1e3a8a
+  classDef pub fill:#ecfeff,stroke:#0891b2,color:#164e63
+  classDef ops fill:#f8fafc,stroke:#94a3b8,color:#334155,stroke-dasharray:4 3
+  classDef store fill:#f0fdf4,stroke:#16a34a,color:#14532d
+
+  API["API REST<br/>/v1"]:::api
+  API --> OPS["Operação<br/>GET /healthz · /readyz · /metrics<br/>GET /v1/status"]:::ops
+  API --> AUTH["Identidade<br/>POST /v1/auth/register<br/>POST /v1/auth/login<br/>POST /v1/auth/logout<br/>GET /v1/auth/me<br/>POST /v1/seller/onboarding"]:::group
+  API --> CAT["Catálogo público<br/>GET /v1/categories<br/>GET /v1/catalog/listings<br/>GET /v1/listings/{id}<br/>GET /v1/sellers/{id}<br/>GET /v1/media/{listingId}/{fileName}"]:::pub
+  API --> SELLER["Vendedor · sessão + papel seller<br/>GET /v1/seller/listings<br/>POST /v1/seller/listings<br/>GET /v1/seller/listings/{id}<br/>PATCH /v1/seller/listings/{id}<br/>POST .../submit<br/>POST .../archive<br/>POST/PATCH/DELETE .../images<br/>GET/POST .../inventory"]:::group
+  API --> ADMIN["Admin · papel admin<br/>POST /v1/admin/categories<br/>PATCH /v1/admin/categories/{id}<br/>DELETE /v1/admin/categories/{id}<br/>GET /v1/admin/listings/pending<br/>POST .../publish<br/>POST .../reject<br/>POST .../suspend"]:::group
+
+  AUTH --> PG[("PostgreSQL")]:::store
+  CAT --> PG
+  SELLER --> PG
+  ADMIN --> PG
+  SELLER --> MIO[("MinIO")]:::store
+  AUTH --> RD[("Redis")]:::store

@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+  namespace: mercado
+  labels:
+    app.kubernetes.io/name: worker
+    app.kubernetes.io/part-of: mercado
+    app.kubernetes.io/component: worker
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: worker
+        app.kubernetes.io/part-of: mercado
+        app.kubernetes.io/component: worker
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 100
+        runAsGroup: 101
+      containers:
+        - name: worker
+          image: mercado-worker:dev
+          imagePullPolicy: IfNotPresent
+          command: ["/app/worker"]
+          env:
+            - name: SERVICE_NAME
+              value: mercado-worker
+            - name: SERVICE_VERSION
+              value: local
+            - name: GIT_COMMIT
+              value: local
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: mercado-secrets
+                  key: database-url
+            - name: REDIS_ADDR
+              value: redis.mercado-data.svc.cluster.local:6379
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mercado-secrets
+                  key: redis-password
+            - name: LOG_LEVEL
+              value: info
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false

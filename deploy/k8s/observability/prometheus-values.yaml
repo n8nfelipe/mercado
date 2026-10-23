@@ -1,0 +1,52 @@
+alertmanager:
+  enabled: false
+
+prometheus-pushgateway:
+  enabled: false
+
+server:
+  retention: "24h"
+  persistentVolume:
+    enabled: false
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  service:
+    type: ClusterIP
+
+kube-state-metrics:
+  enabled: true
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+prometheus-node-exporter:
+  enabled: true
+  resources:
+    requests:
+      cpu: 10m
+      memory: 16Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+
+extraScrapeConfigs: |
+  - job_name: node-exporter
+    static_configs:
+      - targets: ["prometheus-prometheus-node-exporter.mercado-observability.svc.cluster.local:9100"]
+  - job_name: kube-state-metrics
+    static_configs:
+      - targets: ["prometheus-kube-state-metrics.mercado-observability.svc.cluster.local:8080"]
+  - job_name: mercado-api
+    scrape_interval: 10s
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["api.mercado.svc.cluster.local:8080"]

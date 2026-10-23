@@ -1,0 +1,1435 @@
+openapi: 3.1.0
+info:
+  title: Mercado API
+  version: 0.2.0
+  description: Contrato público da API do marketplace. Endpoints públicos usam o prefixo /v1.
+  license:
+    name: MIT
+    identifier: MIT
+servers:
+  - url: http://api.mercado.localhost:8080
+    description: Ingress local do kind
+  - url: http://127.0.0.1:8080
+    description: API local direta
+security: []
+tags:
+  - name: platform
+    description: Saúde, prontidão e metadados da plataforma
+  - name: auth
+    description: Cadastro, login, sessão e onboarding de vendedor
+  - name: categories
+    description: Categorias públicas e administração
+  - name: catalog
+    description: Busca, vitrine e detalhe público
+  - name: seller
+    description: Gestão de anúncios pelo vendedor
+  - name: admin
+    description: Moderação de anúncios
+  - name: media
+    description: Imagens públicas de anúncios
+paths:
+  /v1/status:
+    get:
+      tags: [platform]
+      operationId: getStatus
+      summary: Retorna os metadados da API
+      parameters:
+        - $ref: '#/components/parameters/ApiKey'
+        - $ref: '#/components/parameters/CorrelationID'
+      responses:
+        '200':
+          description: Status da API
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/CorrelationID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /healthz:
+    get:
+      tags: [platform]
+      operationId: getHealth
+      summary: Liveness probe
+      responses:
+        '200':
+          description: Processo vivo
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/CorrelationID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+  /readyz:
+    get:
+      tags: [platform]
+      operationId: getReadiness
+      summary: Readiness probe com PostgreSQL e Redis
+      responses:
+        '200':
+          description: Dependências disponíveis
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/CorrelationID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Readiness'
+        '503':
+          description: Uma ou mais dependências indisponíveis
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/CorrelationID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Readiness'
+  /metrics:
+    get:
+      tags: [platform]
+      operationId: getMetrics
+      summary: Métricas Prometheus
+      responses:
+        '200':
+          description: Exposição no formato Prometheus
+          content:
+            text/plain:
+              schema:
+                type: string
+  /v1/auth/register:
+    post:
+      tags: [auth]
+      operationId: register
+      summary: Cria uma conta de comprador
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Conta criada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /v1/auth/login:
+    post:
+      tags: [auth]
+      operationId: login
+      summary: Autentica e cria sessão
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Sessão criada
+          headers:
+            Set-Cookie:
+              description: Cookie de sessão HttpOnly
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /v1/auth/logout:
+    post:
+      tags: [auth]
+      operationId: logout
+      summary: Invalida a sessão atual
+      security:
+        - cookieAuth: []
+      responses:
+        '204':
+          description: Sessão encerrada
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/auth/me:
+    get:
+      tags: [auth]
+      operationId: getMe
+      summary: Retorna o usuário autenticado
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Usuário autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/seller/onboarding:
+    post:
+      tags: [auth]
+      operationId: becomeSeller
+      summary: Cria o perfil de vendedor
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SellerOnboardingRequest'
+      responses:
+        '201':
+          description: Perfil de vendedor criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerProfile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/sellers/{sellerId}:
+    get:
+      tags: [auth]
+      operationId: getPublicSeller
+      summary: Perfil público do vendedor
+      parameters:
+        - $ref: '#/components/parameters/SellerID'
+      responses:
+        '200':
+          description: Perfil público
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicSeller'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/categories:
+    get:
+      tags: [categories]
+      operationId: listPublicCategories
+      summary: Lista categorias ativas
+      responses:
+        '200':
+          description: Categorias ativas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+  /v1/admin/categories:
+    post:
+      tags: [categories]
+      operationId: createCategory
+      summary: Cria uma categoria
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryInput'
+      responses:
+        '201':
+          description: Categoria criada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/admin/categories/{categoryId}:
+    patch:
+      tags: [categories]
+      operationId: updateCategory
+      summary: Atualiza uma categoria
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CategoryID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryInput'
+      responses:
+        '200':
+          description: Categoria atualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      tags: [categories]
+      operationId: deleteCategory
+      summary: Remove uma categoria sem anúncios
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CategoryID'
+      responses:
+        '204':
+          description: Categoria removida
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/catalog/listings:
+    get:
+      tags: [catalog]
+      operationId: searchListings
+      summary: Busca anúncios publicados
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+            maxLength: 200
+        - name: category_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: min_price_cents
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+        - name: max_price_cents
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+        - name: condition
+          in: query
+          schema:
+            $ref: '#/components/schemas/Condition'
+        - name: free_shipping
+          in: query
+          schema:
+            type: boolean
+        - name: sort
+          in: query
+          schema:
+            $ref: '#/components/schemas/Sort'
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        '200':
+          description: Página de anúncios
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListingPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /v1/listings/{listingId}:
+    get:
+      tags: [catalog]
+      operationId: getPublicListing
+      summary: Detalhe público do anúncio
+      parameters:
+        - $ref: '#/components/parameters/ListingID'
+      responses:
+        '200':
+          description: Anúncio publicado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListingDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/seller/listings:
+    get:
+      tags: [seller]
+      operationId: listSellerListings
+      summary: Lista anúncios do vendedor
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Anúncios do vendedor
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SellerListing'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [seller]
+      operationId: createListing
+      summary: Cria um anúncio em rascunho
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListingInput'
+      responses:
+        '201':
+          description: Anúncio criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerListing'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /v1/seller/listings/{listingId}:
+    get:
+      tags: [seller]
+      operationId: getSellerListing
+      summary: Detalhe do anúncio do vendedor
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ListingID'
+      responses:
+        '200':
+          description: Anúncio do vendedor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerListing'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [seller]
+      operationId: updateListing
+      summary: Atualiza um anúncio
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ListingID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListingPatch'
+      responses:
+        '200':
+          description: Anúncio atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerListing'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/seller/listings/{listingId}/submit:
+    post:
+      tags: [seller]
+      operationId: submitListing
+      summary: Envia o anúncio para revisão
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ListingID'
+      responses:
+        '200':
+          description: Anúncio em revisão
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerListing'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/seller/listings/{listingId}/archive:
+    post:
+      tags: [seller]
+      operationId: archiveListing
+      summary: Arquiva o anúncio
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ListingID'
+      responses:
+        '200':
+          description: Anúncio arquivado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerListing'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/seller/listings/{listingId}/images:
+    post:
+      tags: [seller]
+      operationId: uploadListingImage
+      summary: Envia uma imagem do anúncio
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ListingID'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Imagem enviada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListingImage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+  /v1/seller/listings/{listingId}/images/order:
+    patch:
+      tags: [seller]
+      operationId: reorderListingImages
+      summary: Reordena as imagens do anúncio
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ListingID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImageOrderRequest'
+      responses:
+        '200':
+          description: Imagens reordenadas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ListingImage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/seller/listings/{listingId}/images/{imageId}:
+    delete:
+      tags: [seller]
+      operationId: deleteListingImage
+      summary: Remove uma imagem do anúncio
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ListingID'
+        - $ref: '#/components/parameters/ImageID'
+      responses:
+        '204':
+          description: Imagem removida
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/seller/listings/{listingId}/inventory:
+    get:
+      tags: [seller]
+      operationId: listInventoryAdjustments
+      summary: Histórico de ajustes de estoque
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ListingID'
+      responses:
+        '200':
+          description: Ajustes de estoque
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InventoryAdjustment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [seller]
+      operationId: adjustInventory
+      summary: Ajusta o estoque do anúncio
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ListingID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryAdjustmentRequest'
+      responses:
+        '200':
+          description: Estoque atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryAdjustment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/admin/listings/pending:
+    get:
+      tags: [admin]
+      operationId: listPendingListings
+      summary: Fila de moderação
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Anúncios aguardando revisão
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SellerListing'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /v1/admin/listings/{listingId}/publish:
+    post:
+      tags: [admin]
+      operationId: publishListing
+      summary: Publica um anúncio
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ListingID'
+      responses:
+        '200':
+          description: Anúncio publicado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerListing'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/admin/listings/{listingId}/reject:
+    post:
+      tags: [admin]
+      operationId: rejectListing
+      summary: Rejeita um anúncio
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ListingID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModerationRequest'
+      responses:
+        '200':
+          description: Anúncio rejeitado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerListing'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/admin/listings/{listingId}/suspend:
+    post:
+      tags: [admin]
+      operationId: suspendListing
+      summary: Suspende um anúncio
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ListingID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModerationRequest'
+      responses:
+        '200':
+          description: Anúncio suspenso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerListing'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/media/{listingId}/{fileName}:
+    get:
+      tags: [media]
+      operationId: getListingMedia
+      summary: Serve uma imagem pública do anúncio
+      parameters:
+        - $ref: '#/components/parameters/ListingID'
+        - name: fileName
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-f0-9-]+\\.(jpg|jpeg|png|webp)$'
+      responses:
+        '200':
+          description: Conteúdo da imagem
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/NotFound'
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: mercado_session
+  parameters:
+    ApiKey:
+      name: X-API-Key
+      in: header
+      required: false
+      description: Chave opcional usada no rate limit por API key.
+      schema:
+        type: string
+        minLength: 1
+    CorrelationID:
+      name: X-Correlation-ID
+      in: header
+      required: false
+      description: Identificador de correlação; quando ausente ou inválido, a API gera um novo.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+    SellerID:
+      name: sellerId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    CategoryID:
+      name: categoryId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ListingID:
+      name: listingId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ImageID:
+      name: imageId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  headers:
+    CorrelationID:
+      description: Identificador de correlação da requisição.
+      schema:
+        type: string
+    RetryAfter:
+      description: Segundos até a próxima tentativa permitida.
+      schema:
+        type: integer
+        minimum: 0
+  responses:
+    BadRequest:
+      description: Requisição inválida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Sessão ausente, inválida ou expirada
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Sem permissão para o recurso
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Recurso não encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: Conflito de estado ou unicidade
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    PayloadTooLarge:
+      description: Corpo ou arquivo acima do limite
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    UnsupportedMediaType:
+      description: Tipo de arquivo não suportado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    RateLimited:
+      description: Limite de requisições excedido
+      headers:
+        X-Correlation-ID:
+          $ref: '#/components/headers/CorrelationID'
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalError:
+      description: Falha interna inesperada
+      headers:
+        X-Correlation-ID:
+          $ref: '#/components/headers/CorrelationID'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    Status:
+      type: object
+      additionalProperties: false
+      required: [service, version, commit, status]
+      properties:
+        service:
+          type: string
+          examples: [mercado-api]
+        version:
+          type: string
+          examples: [dev]
+        commit:
+          type: string
+          examples: [none]
+        status:
+          type: string
+          enum: [ok]
+    Health:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+    Readiness:
+      type: object
+      additionalProperties: false
+      required: [status, checks]
+      properties:
+        status:
+          type: string
+          enum: [ok, unavailable]
+        checks:
+          type: object
+          additionalProperties:
+            type: string
+            enum: [up, down]
+          examples:
+            - postgres: up
+              redis: up
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required: [error, correlation_id]
+      properties:
+        error:
+          $ref: '#/components/schemas/ErrorDetail'
+        correlation_id:
+          type: string
+    ErrorDetail:
+      type: object
+      additionalProperties: false
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          examples: [not_found]
+        message:
+          type: string
+          examples: [resource not found]
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldError'
+    FieldError:
+      type: object
+      additionalProperties: false
+      required: [field, message]
+      properties:
+        field:
+          type: string
+        message:
+          type: string
+    Role:
+      type: string
+      enum: [buyer, seller, admin]
+    Condition:
+      type: string
+      enum: [new, used]
+    Sort:
+      type: string
+      enum: [relevance, price_asc, price_desc, newest]
+    ListingStatus:
+      type: string
+      enum: [draft, pending_review, published, rejected, suspended, archived]
+    User:
+      type: object
+      additionalProperties: false
+      required: [id, name, email, roles, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/Role'
+        created_at:
+          type: string
+          format: date-time
+    RegisterRequest:
+      type: object
+      additionalProperties: false
+      required: [name, email, password]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 120
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          minLength: 12
+          maxLength: 128
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+    SellerOnboardingRequest:
+      type: object
+      additionalProperties: false
+      required: [display_name, document, contact]
+      properties:
+        display_name:
+          type: string
+          minLength: 2
+          maxLength: 120
+        document:
+          type: string
+          minLength: 11
+          maxLength: 32
+        contact:
+          type: string
+          minLength: 5
+          maxLength: 254
+    SellerProfile:
+      type: object
+      additionalProperties: false
+      required: [id, display_name, contact, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+        contact:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    PublicSeller:
+      type: object
+      additionalProperties: false
+      required: [id, display_name, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    Category:
+      type: object
+      additionalProperties: false
+      required: [id, name, slug, is_active, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        parent_id:
+          type: [string, 'null']
+          format: uuid
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+    CategoryInput:
+      type: object
+      additionalProperties: false
+      required: [name, slug]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 120
+        slug:
+          type: string
+          pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+          maxLength: 120
+        parent_id:
+          type: [string, 'null']
+          format: uuid
+        is_active:
+          type: boolean
+          default: true
+    ListingInput:
+      type: object
+      additionalProperties: false
+      required: [title, description, category_id, price_cents, currency, condition, free_shipping, stock]
+      properties:
+        title:
+          type: string
+          minLength: 10
+          maxLength: 120
+        description:
+          type: string
+          minLength: 20
+          maxLength: 5000
+        category_id:
+          type: string
+          format: uuid
+        price_cents:
+          type: integer
+          minimum: 1
+        currency:
+          type: string
+          enum: [BRL]
+        condition:
+          $ref: '#/components/schemas/Condition'
+        free_shipping:
+          type: boolean
+        stock:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+    ListingPatch:
+      type: object
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          minLength: 10
+          maxLength: 120
+        description:
+          type: string
+          minLength: 20
+          maxLength: 5000
+        category_id:
+          type: string
+          format: uuid
+        price_cents:
+          type: integer
+          minimum: 1
+        condition:
+          $ref: '#/components/schemas/Condition'
+        free_shipping:
+          type: boolean
+        stock:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+    ListingImage:
+      type: object
+      additionalProperties: false
+      required: [id, url, position]
+      properties:
+        id:
+          type: string
+          format: uuid
+        url:
+          type: string
+        position:
+          type: integer
+          minimum: 0
+    ImageOrderRequest:
+      type: object
+      additionalProperties: false
+      required: [image_ids]
+      properties:
+        image_ids:
+          type: array
+          minItems: 1
+          maxItems: 8
+          items:
+            type: string
+            format: uuid
+    ShortSeller:
+      type: object
+      additionalProperties: false
+      required: [id, display_name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+    ShortCategory:
+      type: object
+      additionalProperties: false
+      required: [id, name, slug]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+    ListingSummary:
+      type: object
+      additionalProperties: false
+      required: [id, title, price_cents, currency, condition, free_shipping, stock, category, seller, published_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        price_cents:
+          type: integer
+        currency:
+          type: string
+        condition:
+          $ref: '#/components/schemas/Condition'
+        free_shipping:
+          type: boolean
+        stock:
+          type: integer
+        cover_image_url:
+          type: [string, 'null']
+        category:
+          $ref: '#/components/schemas/ShortCategory'
+        seller:
+          $ref: '#/components/schemas/ShortSeller'
+        published_at:
+          type: string
+          format: date-time
+    ListingDetail:
+      type: object
+      additionalProperties: false
+      required: [id, title, description, price_cents, currency, condition, free_shipping, stock, category, seller, images, published_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        price_cents:
+          type: integer
+        currency:
+          type: string
+        condition:
+          $ref: '#/components/schemas/Condition'
+        free_shipping:
+          type: boolean
+        stock:
+          type: integer
+        category:
+          $ref: '#/components/schemas/ShortCategory'
+        seller:
+          $ref: '#/components/schemas/ShortSeller'
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ListingImage'
+        published_at:
+          type: string
+          format: date-time
+    ListingPage:
+      type: object
+      additionalProperties: false
+      required: [items, page, page_size, total, total_pages]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ListingSummary'
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total:
+          type: integer
+        total_pages:
+          type: integer
+    SellerListing:
+      type: object
+      additionalProperties: false
+      required: [id, title, description, price_cents, currency, condition, free_shipping, stock, status, category, images, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        price_cents:
+          type: integer
+        currency:
+          type: string
+        condition:
+          $ref: '#/components/schemas/Condition'
+        free_shipping:
+          type: boolean
+        stock:
+          type: integer
+        status:
+          $ref: '#/components/schemas/ListingStatus'
+        rejection_reason:
+          type: [string, 'null']
+        category:
+          $ref: '#/components/schemas/ShortCategory'
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ListingImage'
+        submitted_at:
+          type: [string, 'null']
+          format: date-time
+        published_at:
+          type: [string, 'null']
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    InventoryAdjustmentRequest:
+      type: object
+      additionalProperties: false
+      required: [delta, reason]
+      properties:
+        delta:
+          type: integer
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 200
+    InventoryAdjustment:
+      type: object
+      additionalProperties: false
+      required: [id, listing_id, actor_id, delta, quantity, reason, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        listing_id:
+          type: string
+          format: uuid
+        actor_id:
+          type: string
+          format: uuid
+        delta:
+          type: integer
+        quantity:
+          type: integer
+        reason:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    ModerationRequest:
+      type: object
+      additionalProperties: false
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 500

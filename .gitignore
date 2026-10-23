@@ -1,0 +1,34 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+deploy/secrets/
+*.pem
+*.key
+*.crt
+
+# Go
+backend/bin/
+backend/dist/
+*.test
+coverage.out
+
+# Node
+node_modules/
+.pnpm-store/
+.next/
+out/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Tooling
+.tilt/
+playwright-report/
+test-results/
+.gitleaks/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

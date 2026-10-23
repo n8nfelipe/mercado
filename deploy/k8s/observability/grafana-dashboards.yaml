@@ -1,0 +1,86 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: mercado-observability
+  labels:
+    app.kubernetes.io/part-of: mercado
+data:
+  mercado-red.json: |
+    {
+      "annotations": {"list": []},
+      "editable": true,
+      "graphTooltip": 0,
+      "links": [],
+      "panels": [
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {"defaults": {"unit": "reqps"}, "overrides": []},
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+          "id": 1,
+          "options": {"legend": {"displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "single", "sort": "none"}},
+          "targets": [{"expr": "sum(rate(http_requests_total[5m]))", "legendFormat": "requests/s", "refId": "A"}],
+          "title": "Taxa de requisições",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {"defaults": {"unit": "percentunit"}, "overrides": []},
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+          "id": 2,
+          "options": {"legend": {"displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "single", "sort": "none"}},
+          "targets": [{"expr": "sum(rate(http_requests_total{status=~\"5..\"}[5m])) / clamp_min(sum(rate(http_requests_total[5m])), 1)", "legendFormat": "erros 5xx", "refId": "A"}],
+          "title": "Taxa de erros 5xx",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []},
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+          "id": 3,
+          "options": {"legend": {"displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "single", "sort": "none"}},
+          "targets": [{"expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p95", "refId": "A"}],
+          "title": "Latência p95",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {"defaults": {"unit": "percentunit", "max": 1}, "overrides": []},
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+          "id": 4,
+          "options": {"legend": {"displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "single", "sort": "none"}},
+          "targets": [{"expr": "1 - avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m]))", "legendFormat": "CPU", "refId": "A"}],
+          "title": "Saturação de CPU",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {"defaults": {"unit": "percentunit", "max": 1}, "overrides": []},
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+          "id": 5,
+          "options": {"legend": {"displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "single", "sort": "none"}},
+          "targets": [{"expr": "node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes", "legendFormat": "memória disponível", "refId": "A"}],
+          "title": "Memória disponível",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+          "id": 6,
+          "options": {"legend": {"displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "single", "sort": "none"}},
+          "targets": [{"expr": "sum(increase(kube_pod_container_status_restarts_total[1h]))", "legendFormat": "restarts", "refId": "A"}],
+          "title": "Reinícios de containers (1h)",
+          "type": "timeseries"
+        }
+      ],
+      "refresh": "30s",
+      "schemaVersion": 39,
+      "tags": ["mercado", "red"],
+      "templating": {"list": []},
+      "time": {"from": "now-1h", "to": "now"},
+      "timezone": "browser",
+      "title": "Mercado / RED e saturação",
+      "uid": "mercado-red",
+      "version": 1
+    }

@@ -1,0 +1,12 @@
+title = "Mercado secret scan"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Artefatos gerados e dependências não versionados"
+paths = [
+  '''frontend/apps/web/\.next/''',
+  '''node_modules/''',
+  '''\.pnpm-store/''',
+]

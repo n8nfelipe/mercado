@@ -1,0 +1,24 @@
+{
+  "name": "@mercado/api-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "generate": "openapi-typescript ../../../api/openapi.yaml -o src/schema.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "openapi-typescript": "7.6.1",
+    "typescript": "5.7.3"
+  }
+}

@@ -47,14 +47,3 @@ func writeValidationError(w http.ResponseWriter, r *http.Request, details []Fiel
 		CorrelationID: CorrelationID(r),
 	})
 }
-
-func writeErrorWithDetails(w http.ResponseWriter, r *http.Request, status int, code, message string, details []FieldError) {
-	writeJSON(w, status, ErrorResponse{
-		Error: ErrorDetail{
-			Code:    code,
-			Message: message,
-			Details: details,
-		},
-		CorrelationID: CorrelationID(r),
-	})
-}

@@ -2,7 +2,7 @@
 
 ## Visão geral
 
-- Go 1.22, `net/http` + `chi`, `pgx/v5` e `go-redis/v9`.
+- Go 1.26, `net/http` + `chi`, `pgx/v5` e `go-redis/v9`.
 - Logs em JSON com `slog`.
 - Métricas Prometheus em `/metrics`.
 - Traces OpenTelemetry exportados por OTLP gRPC.

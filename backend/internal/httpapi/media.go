@@ -73,7 +73,7 @@ func (s *Server) uploadListingImage(w http.ResponseWriter, r *http.Request) {
 		writeValidationError(w, r, []FieldError{{Field: "file", Message: "file is required"}})
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	if header.Size > maxImageBytes {
 		writeError(w, r, http.StatusRequestEntityTooLarge, "image_too_large", "image exceeds the 5 MiB limit")
@@ -222,7 +222,7 @@ func (s *Server) serveListingMedia(w http.ResponseWriter, r *http.Request) {
 		s.internalError(w, r, "read image object", err)
 		return
 	}
-	defer reader.Close()
+	defer func() { _ = reader.Close() }()
 
 	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("Content-Length", fmt.Sprintf("%d", size))

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -247,23 +246,4 @@ func scanCategory(scanner categoryScanner) (Category, error) {
 	var category Category
 	err := scanner.Scan(&category.ID, &category.Name, &category.Slug, &category.ParentID, &category.IsActive, &category.CreatedAt)
 	return category, err
-}
-
-func slugify(value string) string {
-	value = strings.ToLower(strings.TrimSpace(value))
-	var builder strings.Builder
-	lastDash := true
-	for _, character := range value {
-		switch {
-		case character >= 'a' && character <= 'z', character >= '0' && character <= '9':
-			builder.WriteRune(character)
-			lastDash = false
-		default:
-			if !lastDash {
-				builder.WriteByte('-')
-				lastDash = true
-			}
-		}
-	}
-	return strings.Trim(builder.String(), "-")
 }

@@ -24,7 +24,7 @@ kind cluster mercado-dev (1 control-plane)
 - kind
 - kubectl
 - Helm
-- Go 1.22+
+- Go 1.26+
 - Node.js 24+ e pnpm
 - `ss` (iproute2) para o preflight de portas
 

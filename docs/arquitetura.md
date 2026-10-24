@@ -33,7 +33,7 @@ worker existe como binário e Deployment, mas ainda não consome filas.
 | Componente | Tecnologia | Onde roda | Responsabilidade |
 | --- | --- | --- | --- |
 | `web` | Next.js 16, React 19, TypeScript | `mercado/web:3000` | Vitrine, detalhe, login/cadastro e área do vendedor; SSR e proxy same-origin de `/api`. |
-| `api` | Go 1.22, chi, pgx/v5, go-redis, MinIO SDK | `mercado/api:8080` | REST `/v1`, sessão, autorização, catálogo, moderação, estoque e mídia. |
+| `api` | Go 1.26, chi, pgx/v5, go-redis, MinIO SDK | `mercado/api:8080` | REST `/v1`, sessão, autorização, catálogo, moderação, estoque e mídia. |
 | `worker` | Go | `mercado/worker` | Placeholder: abre conexões com PostgreSQL/Redis e aguarda `SIGTERM`. Sem processamento assíncrono. |
 | `migrate` | goose | Job em `mercado` | Aplica migrations versionadas no PostgreSQL antes da API ficar pronta. |
 | `minio-init` | MinIO Client | Job em `mercado-data` | Cria o bucket `mercado-listings` e habilita versionamento. |

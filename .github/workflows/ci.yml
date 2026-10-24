@@ -90,8 +90,17 @@ jobs:
       - name: Download Go modules
         working-directory: backend
         run: go mod download
-      - name: SonarQube Scan
+      - name: SonarQube Scan (backend)
         uses: SonarSource/sonarqube-scan-action@v8.3.0
+        with:
+          projectBaseDir: backend
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+      - name: SonarQube Scan (frontend)
+        uses: SonarSource/sonarqube-scan-action@v8.3.0
+        with:
+          projectBaseDir: frontend
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
